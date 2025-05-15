@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AR Clima</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        html {
+            font-size: 16px;
+        }
+
+        body {
+            overflow: hidden;
+        }
+
+        a-scene {
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+            background: transparent;
+        }
+
+        #modelSelector {
+            position: fixed;
+            top: env(safe-area-inset-top, 1.25rem);
+            left: env(safe-area-inset-left, 1.25rem);
+            right: env(safe-area-inset-right, 1.25rem);
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.95);
+            padding: clamp(0.625rem, 3vw, 0.9375rem);
+            border-radius: 1rem;
+            box-shadow: 0 0.25rem 1.25rem rgba(0,0,0,0.15);
+            backdrop-filter: blur(0.625rem);
+            -webkit-backdrop-filter: blur(0.625rem);
+            max-width: 31.25rem;
+            margin: 0 auto;
+        }
+
+        .weather-info {
+            position: fixed;
+            bottom: env(safe-area-inset-bottom, 1.25rem);
+            left: env(safe-area-inset-left, 1.25rem);
+            right: env(safe-area-inset-right, 1.25rem);
+            background: rgba(255, 255, 255, 0.95);
+            padding: clamp(0.625rem, 3vw, 0.9375rem);
+            border-radius: 1rem;
+            box-shadow: 0 0.25rem 1.25rem rgba(0,0,0,0.15);
+            z-index: 10;
+            backdrop-filter: blur(0.625rem);
+            -webkit-backdrop-filter: blur(0.625rem);
+            max-width: 31.25rem;
+            margin: 0 auto;
+        }
+
+        .instructions {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: clamp(0.75rem, 4vw, 1.25rem);
+            border-radius: 1.875rem;
+            text-align: center;
+            z-index: 10;
+            font-size: clamp(0.75rem, 4vw, 1rem);
+            backdrop-filter: blur(0.3125rem);
+            -webkit-backdrop-filter: blur(0.3125rem);
+            display: none;
+            max-width: 90%;
+            width: auto;
+        }
+
+        .weather-icon {
+            font-size: clamp(1.25rem, 6vw, 1.5rem);
+            margin-right: 0.5rem;
+        }
+
+        .weather-temp {
+            font-size: clamp(1.5rem, 8vw, 2rem);
+            font-weight: 600;
+            margin: 0.3125rem 0;
+        }
+
+        .weather-condition {
+            font-size: clamp(0.875rem, 4vw, 1.125rem);
+            font-weight: 500;
+            color: #333;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .weather-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
+            gap: clamp(0.5rem, 2vw, 0.75rem);
+            margin-top: 0.625rem;
+            font-size: clamp(0.75rem, 3vw, 0.875rem);
+        }
+
+        .weather-detail-item {
+            display: flex;
+            align-items: center;
+            gap: 0.3125rem;
+            white-space: nowrap;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.625rem;
+            min-height: 2.5rem;
+        }
+
+        .loading::after {
+            content: '';
+            width: clamp(1rem, 4vw, 1.25rem);
+            height: clamp(1rem, 4vw, 1.25rem);
+            border: 0.125rem solid #333;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: loading 0.8s linear infinite;
+        }
+
+        @keyframes loading {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Orientação Paisagem */
+        @media (orientation: landscape) {
+            #modelSelector {
+                top: 0.625rem;
+                left: 0.625rem;
+                right: auto;
+                width: 18.75rem;
+            }
+
+            .weather-info {
+                bottom: 0.625rem;
+                left: 0.625rem;
+                right: auto;
+                width: 18.75rem;
+            }
+
+            .instructions {
+                font-size: 0.875rem;
+                padding: 0.625rem 1.25rem;
+            }
+        }
+
+        /* Dispositivos Pequenos */
+        @media (max-width: 22.5rem) {
+            #modelSelector, .weather-info {
+                padding: 0.5rem;
+            }
+
+            .weather-details {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Suporte a Notch e Áreas Seguras */
+        @supports (padding: max(0px)) {
+            #modelSelector {
+                padding-left: max(env(safe-area-inset-left), 1.25rem);
+                padding-right: max(env(safe-area-inset-right), 1.25rem);
+            }
+
+            .weather-info {
+                padding-left: max(env(safe-area-inset-left), 1.25rem);
+                padding-right: max(env(safe-area-inset-right), 1.25rem);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="modelSelector">
+        <div id="weatherInfo" class="loading">Carregando dados do clima...</div>
+    </div>
+
+    <div class="weather-info">
+        <div id="weatherDetails"></div>
+    </div>
+
+    <div class="instructions">
+        Aponte sua câmera para o marcador Hiro para ver o modelo 3D do clima
+    </div>
+
+    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;">
+        <a-marker type="pattern" preset="hiro">
+            <a-entity id="model" position="0 0 0" scale="0.5 0.5 0.5" rotation="0 0 0" gltf-model="models/3d_sol.glb"></a-entity>
+        </a-marker>
+        <a-entity camera></a-entity>
+    </a-scene>
+
+    <script>
+        const API_KEY = 'ef7303a373f5aeb3468cc3daf4889741';
+        const weatherModelMap = {
+            'Clear': 'models/3d_sol.glb',
+            'Clouds': 'models/3d_nublado.glb',
+            'Rain': 'models/3d_chuva.glb',
+            'Drizzle': 'models/3d_chuva.glb',
+            'Thunderstorm': 'models/3d_trovoada.glb',
+            'Snow': 'models/3d_neve.glb',
+            'Mist': 'models/3d_ceu_nuvens.glb',
+            'Smoke': 'models/3d_ceu_nuvens.glb',
+            'Haze': 'models/3d_ceu_nuvens.glb',
+            'Dust': 'models/3d_ceu_nuvens.glb',
+            'Fog': 'models/3d_ceu_nuvens.glb',
+            'Sand': 'models/3d_ceu_nuvens.glb',
+            'Ash': 'models/3d_ceu_nuvens.glb',
+            'Squall': 'models/3d_tempestade.glb',
+            'Tornado': 'models/3d_tempestade.glb'
+        };
+
+        const weatherIcons = {
+            'Clear': '☀️',
+            'Clouds': '☁️',
+            'Rain': '🌧️',
+            'Drizzle': '🌦️',
+            'Thunderstorm': '⛈️',
+            'Snow': '❄️',
+            'Mist': '🌫️',
+            'Smoke': '💨',
+            'Haze': '🌫️',
+            'Dust': '💨',
+            'Fog': '🌫️',
+            'Sand': '💨',
+            'Ash': '💨',
+            'Squall': '🌪️',
+            'Tornado': '🌪️'
+        };
+
+        function getWeatherModel(weatherMain) {
+            return weatherModelMap[weatherMain] || 'models/3d_sol.glb';
+        }
+
+        function getWeatherIcon(weatherMain) {
+            return weatherIcons[weatherMain] || '☀️';
+        }
+
+        function updateWeatherInfo(weatherData) {
+            const weatherInfo = document.getElementById('weatherInfo');
+            const weatherDetails = document.getElementById('weatherDetails');
+            
+            const weatherMain = weatherData.weather[0].main;
+            const weatherIcon = getWeatherIcon(weatherMain);
+            
+            weatherInfo.innerHTML = `
+                <div class="weather-condition">
+                    <span class="weather-icon">${weatherIcon}</span>
+                    ${weatherData.weather[0].description}
+                </div>
+                <div class="weather-temp">${Math.round(weatherData.main.temp)}°C</div>
+            `;
+
+            weatherDetails.innerHTML = `
+                <div class="weather-details">
+                    <div class="weather-detail-item">
+                        <span>💧 Umidade:</span>
+                        <span>${weatherData.main.humidity}%</span>
+                    </div>
+                    <div class="weather-detail-item">
+                        <span>💨 Vento:</span>
+                        <span>${weatherData.wind.speed} m/s</span>
+                    </div>
+                    <div class="weather-detail-item">
+                        <span>🌡️ Mín:</span>
+                        <span>${Math.round(weatherData.main.temp_min)}°C</span>
+                    </div>
+                    <div class="weather-detail-item">
+                        <span>🌡️ Máx:</span>
+                        <span>${Math.round(weatherData.main.temp_max)}°C</span>
+                    </div>
+                </div>
+            `;
+
+            const model = document.getElementById('model');
+            const modelPath = getWeatherModel(weatherMain);
+            model.setAttribute('gltf-model', modelPath);
+        }
+
+        function getWeatherData() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const { latitude, longitude } = position.coords;
+                        fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&units=metric&appid=${API_KEY}&lang=pt_br`)
+                            .then(response => response.json())
+                            .then(data => {
+                                updateWeatherInfo(data);
+                            })
+                            .catch(error => {
+                                console.error('Erro ao buscar dados do clima:', error);
+                                document.getElementById('weatherInfo').innerHTML = 'Erro ao carregar dados do clima';
+                            });
+                    },
+                    (error) => {
+                        console.error('Erro ao obter localização:', error);
+                        document.getElementById('weatherInfo').innerHTML = 'Por favor, ative os serviços de localização';
+                    }
+                );
+            } else {
+                document.getElementById('weatherInfo').innerHTML = 'Geolocalização não é suportada pelo seu navegador';
+            }
+        }
+
+        // Mostrar instruções por 5 segundos quando a página carregar
+        window.addEventListener('load', () => {
+            const instructions = document.querySelector('.instructions');
+            instructions.style.display = 'block';
+            setTimeout(() => {
+                instructions.style.display = 'none';
+            }, 5000);
+        });
+
+        // Obter dados do clima quando a página carregar
+        getWeatherData();
+
+        // Atualizar dados do clima a cada 5 minutos
+        setInterval(getWeatherData, 300000);
+    </script>
+</body>
+</html>
